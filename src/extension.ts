@@ -18,7 +18,7 @@ export function activate(context: vscode.ExtensionContext): void {
 			try {
 				await connectStream({ server, accessToken }, viewProvider);
 			} catch (error) {
-				viewProvider.emit('loggedin', { avatarUrl: '' , host: server });
+				viewProvider.emit('loggedin', { avatarUrl: '', host: server });
 				viewProvider.emit('error', error);
 			}
 		} else {
@@ -26,7 +26,7 @@ export function activate(context: vscode.ExtensionContext): void {
 		}
 	});
 	viewProvider.onVisibilityChanged((visibliity) => {
-		if (! visibliity) {
+		if (!visibliity) {
 			disconnectStream(viewProvider);
 		}
 	});
@@ -48,6 +48,11 @@ export function activate(context: vscode.ExtensionContext): void {
 	viewProvider.on('note', async (inputs) => {
 		try {
 			if (client === undefined) {
+				return;
+			}
+			// check if content is null
+			if (inputs.content === '') {
+				vscode.window.showErrorMessage("Content is null, you should write something before making a post.");
 				return;
 			}
 			await client.request('notes/create', {
