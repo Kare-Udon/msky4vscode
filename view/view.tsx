@@ -1,4 +1,4 @@
-import { VSCodeButton, VSCodeProgressRing, VSCodeTextArea } from '@vscode/webview-ui-toolkit/react';
+import { VSCodeButton, VSCodeDropdown, VSCodeOption, VSCodeProgressRing, VSCodeTextArea } from '@vscode/webview-ui-toolkit/react';
 import React from "react";
 import { useState, useEffect, useCallback } from "react";
 import { createRoot } from 'react-dom/client';
@@ -33,11 +33,14 @@ const createdAtFormatter = Intl.DateTimeFormat([], {
     minute: '2-digit',
 });
 
+type VisibilityOption = 'public' | 'home' | 'followers' | 'specified';
+
 function App() {
     const [noteContent, setNoteContent] = useState('');
+    const [visibilityOption, setVisibilityOption] = useState<VisibilityOption>('public');
     const notedError = useNotedError();
-    const [noteCwOpened, setNoteCwOpened] = useState<{[parentsNoteId: string]: boolean}>({});
-    const [noteSensitiveFileOpened, setNoteSensitiveFileOpened] = useState<{[parentsNoteId: string]: boolean}>({});
+    const [noteCwOpened, setNoteCwOpened] = useState<{ [parentsNoteId: string]: boolean }>({});
+    const [noteSensitiveFileOpened, setNoteSensitiveFileOpened] = useState<{ [parentsNoteId: string]: boolean }>({});
     const loggedInAccount = useLoggedInAccount();
     const loggedInError = useLoggedInError();
     const timeline = useTimeline();
@@ -74,6 +77,7 @@ function App() {
             form: 'note',
             inputs: {
                 content: noteContent,
+                visiability: visibilityOption,
             },
         });
     };
@@ -135,6 +139,17 @@ function App() {
                 </form>
                 <form action="#">
                     <div>
+                        <label>Visibility</label>
+                        <VSCodeDropdown
+                            value={visibilityOption}
+                            onChange={(event) => setVisibilityOption(event.target.value as VisibilityOption)}
+                        >
+                            <VSCodeOption value='public'>Public</VSCodeOption>
+                            <VSCodeOption value='home'>Home</VSCodeOption>
+                            <VSCodeOption value='followers'>Followers</VSCodeOption>
+                        </VSCodeDropdown>
+                    </div>
+                    <div>
                         <VSCodeTextArea
                             name="content"
                             value={noteContent}
@@ -194,9 +209,9 @@ function App() {
                                     note={note}
                                     parentsNoteId={note.id}
                                     cwOpened={noteCwOpened}
-                                    onCwToggle={(parentsNoteId) => setNoteCwOpened({...noteCwOpened, [parentsNoteId]: ! noteCwOpened[parentsNoteId]})}
+                                    onCwToggle={(parentsNoteId) => setNoteCwOpened({ ...noteCwOpened, [parentsNoteId]: !noteCwOpened[parentsNoteId] })}
                                     sensitiveFileOpened={noteSensitiveFileOpened}
-                                    onSensitiveFileToggle={(parentsNoteId) => setNoteSensitiveFileOpened({...noteSensitiveFileOpened, [parentsNoteId]: ! noteSensitiveFileOpened[parentsNoteId]})}
+                                    onSensitiveFileToggle={(parentsNoteId) => setNoteSensitiveFileOpened({ ...noteSensitiveFileOpened, [parentsNoteId]: !noteSensitiveFileOpened[parentsNoteId] })}
                                     linkifyOptions={linkifyOptions}
                                 />
                             </div>
@@ -211,9 +226,9 @@ function App() {
 function NoteContent({ note, parentsNoteId, cwOpened, onCwToggle, sensitiveFileOpened, onSensitiveFileToggle, linkifyOptions }: {
     note: EmittingEvents['note']['message'];
     parentsNoteId: string;
-    cwOpened: {[parentsNoteId: string]: boolean};
+    cwOpened: { [parentsNoteId: string]: boolean };
     onCwToggle: (parentsNoteId: string) => void;
-    sensitiveFileOpened: {[parentsNoteId: string]: boolean};
+    sensitiveFileOpened: { [parentsNoteId: string]: boolean };
     onSensitiveFileToggle: (parentNoteId: string) => void;
     linkifyOptions: LinkifyOptions;
 }) {
@@ -230,7 +245,7 @@ function NoteContent({ note, parentsNoteId, cwOpened, onCwToggle, sensitiveFileO
                     {cwOpened[parentsNoteId] ? 'Hide' : 'Show'} content
                 </VSCodeButton>
             </>}
-            {(! note.cw || cwOpened[parentsNoteId]) && <>
+            {(!note.cw || cwOpened[parentsNoteId]) && <>
                 {note.text !== null &&
                     <p className={[styles.reset, styles.noteText].join(' ')}>
                         <Linkify options={linkifyOptions}>{note.text}</Linkify>
@@ -247,25 +262,25 @@ function NoteContent({ note, parentsNoteId, cwOpened, onCwToggle, sensitiveFileO
                 {note.files.length !== 0 &&
                     <div className={[styles.flex, styles.noteFiles].join(' ')}>
                         {note.files.map((file) => (
-                            file.isSensitive && ! sensitiveFileOpened[parentsNoteId]
-                            ? <div
-                                key={file.id}
-                                className={styles.defaultFileThumbnail}
-                            ></div>
-                            : <a
-                                key={file.id}
-                                href={file.url}
-                                className={styles.link}
-                            >
-                                {file.thumbnailUrl !== null
-                                ? <img
-                                    src={file.thumbnailUrl}
-                                    alt={file.comment ?? ''}
-                                    className={styles.noteFileThumbnail}
-                                />
-                                : <div className={styles.noteFileText}>{file.name}</div>
-                                }
-                            </a>
+                            file.isSensitive && !sensitiveFileOpened[parentsNoteId]
+                                ? <div
+                                    key={file.id}
+                                    className={styles.defaultFileThumbnail}
+                                ></div>
+                                : <a
+                                    key={file.id}
+                                    href={file.url}
+                                    className={styles.link}
+                                >
+                                    {file.thumbnailUrl !== null
+                                        ? <img
+                                            src={file.thumbnailUrl}
+                                            alt={file.comment ?? ''}
+                                            className={styles.noteFileThumbnail}
+                                        />
+                                        : <div className={styles.noteFileText}>{file.name}</div>
+                                    }
+                                </a>
                         ))}
                     </div>
                 }

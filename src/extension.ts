@@ -57,6 +57,7 @@ export function activate(context: vscode.ExtensionContext): void {
 			}
 			await client.request('notes/create', {
 				text: inputs.content,
+				visibility: inputs.visiability,
 			});
 			viewProvider.emit('noted');
 		} catch (error) {

@@ -18,6 +18,7 @@ export type ListeningEvents = {
 	'note': {
 		inputs: {
 			content: string;
+			visiability: 'public' | 'home' | 'followers' | 'specified';
 		};
 	};
 };
