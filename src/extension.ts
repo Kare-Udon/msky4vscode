@@ -55,10 +55,49 @@ export function activate(context: vscode.ExtensionContext): void {
 				vscode.window.showErrorMessage("Content is null, you should write something before making a post.");
 				return;
 			}
-			await client.request('notes/create', {
-				text: inputs.content,
-				visibility: inputs.visiability,
+			// extract Markdown image from content and send the images
+			let img_re = /!\[\]\((.*)\)/gm;
+			const img_match = inputs.content.matchAll(img_re);
+
+			img_re = /(!\[\]\(.*\))/gm;
+			inputs.content = inputs.content.replace(img_re, '');
+
+			vscode.window.withProgress({
+				location: vscode.ProgressLocation.Notification,
+				title: "Sending note...",
+			}, async (progress, token) => {
+				progress.report({ increment: 0 });
+
+				let img_urls: string[] = [];
+				for (const match of img_match) {
+					img_urls.push(match[1]);
+				}
+
+				// keep img_urls unique
+				img_urls = [...new Set(img_urls)];
+
+				let img_ids: string[] = [];
+				for (const [index, img_url] of img_urls.entries()) {
+					progress.report({ increment: 90 / img_urls.length, message: "Uploading image: " + index + "/" + img_urls.length + "..." });
+					// upload image
+					const img_id = await uploadImage(img_url, viewProvider);
+					if (img_id !== undefined) {
+						img_ids.push(img_id);
+					}
+				}
+
+				// keep img_ids unique
+				img_ids = [...new Set(img_ids)];
+
+				await client?.request('notes/create', {
+					text: inputs.content,
+					visibility: inputs.visiability,
+					fileIds: img_ids,
+				});
+
+				progress.report({ increment: 10, message: "Note sent!" });
 			});
+
 			viewProvider.emit('noted');
 		} catch (error) {
 			viewProvider.emit('noted-error', error);
@@ -113,4 +152,43 @@ function disconnectStream(viewProvider?: ViewProvider): void {
 	stream = undefined;
 	client = undefined;
 	viewProvider?.emit('loggedout');
+}
+
+async function uploadImage(local_url: string, viewProvider: ViewProvider): Promise<string | undefined> {
+	try {
+		// read image to buffer
+		const image = await vscode.workspace.fs.readFile(vscode.Uri.file(local_url));
+		// get image md5
+		const crypto = require('crypto');
+		const img_md5: string = crypto.createHash('md5').update(image).digest('hex');
+		// check if image exists
+		const res = await client?.request('drive/files/check-existence', {
+			md5: img_md5,
+		});
+		if (res as unknown as boolean) {
+			// if exists, request to get file id
+			const res = await client?.request('drive/files/find-by-hash', {
+				md5: img_md5,
+			});
+			// TODO: fix the type
+			return (res as any)[0].id;
+		} else {
+			// if not exists, upload image
+			const path = require("path");
+			const FormData = require('form-data');
+			const axios = require('axios');
+			const form = new FormData();
+			form.append("name", path.basename(local_url));
+			form.append("file", image);
+
+			axios.defaults.headers.common['Authorization'] = `Bearer ${client?.credential}`;
+			const res = await axios.post(client?.origin + "/api/drive/files/create", form, {
+				...form.getHeaders()
+			});
+			return res.data.id;
+		}
+	}
+	catch (error) {
+		viewProvider.emit('noted-error', error);
+	}
 }
