@@ -92,7 +92,7 @@ export function activate(context: vscode.ExtensionContext): void {
 				await client?.request('notes/create', {
 					text: inputs.content,
 					visibility: inputs.visiability,
-					fileIds: img_ids,
+					...(img_ids.length > 0 && { fileIds: img_ids }),
 				});
 
 				progress.report({ increment: 10, message: "Note sent!" });
