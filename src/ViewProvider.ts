@@ -48,6 +48,9 @@ export type EmittingEvents = {
 	'error': {
 		message: any;
 	};
+	'loaded_emoji': {
+		message: any;
+	}
 };
 
 export class ViewProvider implements vscode.WebviewViewProvider {

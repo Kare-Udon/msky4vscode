@@ -3,6 +3,7 @@ import { ListeningEvents, ViewProvider } from './ViewProvider.js';
 import * as Misskey from 'misskey-js';
 import WebSocket from "ws";
 import fetch from 'node-fetch';
+import axios from 'axios';
 
 let client: Misskey.api.APIClient | undefined;
 let stream: Misskey.Stream | undefined;
@@ -17,6 +18,8 @@ export function activate(context: vscode.ExtensionContext): void {
 		if (typeof server === 'string' && typeof accessToken === 'string') {
 			try {
 				await connectStream({ server, accessToken }, viewProvider);
+
+				await getEmojis(viewProvider);
 			} catch (error) {
 				viewProvider.emit('loggedin', { avatarUrl: '', host: server });
 				viewProvider.emit('error', error);
@@ -153,6 +156,12 @@ function disconnectStream(viewProvider?: ViewProvider): void {
 	client = undefined;
 	viewProvider?.emit('loggedout');
 }
+
+async function getEmojis(viewProvider?: ViewProvider): Promise<void> {
+	const emoji_list = await axios.get(client?.origin + "/api/emojis");
+
+	viewProvider?.emit('loaded_emoji', emoji_list.data);
+};
 
 async function uploadImage(local_url: string, viewProvider: ViewProvider): Promise<string | undefined> {
 	try {

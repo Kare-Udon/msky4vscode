@@ -1,4 +1,6 @@
 import { css } from '@emotion/css';
+import styled from '@emotion/styled';
+import { GridComponents } from "react-virtuoso";
 
 export const formItem = css({
     margin: '10px 0',
@@ -140,7 +142,7 @@ export const noteFileThumbnail = css({
 });
 
 export const defaultFileThumbnail = css({
-    display:'inline-block',
+    display: 'inline-block',
     width: '100px',
     height: '100px',
     backgroundColor: 'var(--vscode-button-secondaryBackground)',
@@ -148,6 +150,70 @@ export const defaultFileThumbnail = css({
 });
 
 export const noteFileText = css({
-    display:'inline-block',
+    display: 'inline-block',
     verticalAlign: 'middle',
+});
+
+export const ItemContainer = styled.div`
+  box-sizing: border-box;
+  padding: 2px;
+  width: 20%;
+  background: var(--vscode-editor-background);
+  display: flex;
+  flex: none;
+  align-content: stretch;
+`;
+
+export const ItemWrapper = styled.div`
+    flex: 1;
+    text-align: center;
+    height: 25px;
+    padding: 2px;
+  }
+`;
+
+export const ListContainer = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+` as GridComponents['List'];
+
+export const hoverableEmoji = css({
+    position: 'relative',
+    cursor: 'pointer',
+    transition: 'transform 0.2s',
+    width: '24px',
+    height: '24px',
+    display: 'inline-flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+
+    'img': {
+        width: '100%',
+        height: '100%',
+        objectFit: 'contain',
+    },
+
+    '&:hover': {
+        transform: 'translateY(-2px)',
+    },
+
+    '&:after': {
+        content: 'attr(data-name)',
+        position: 'absolute',
+        bottom: '-20px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        background: 'var(--vscode-editor-background)',
+        padding: '2px 4px',
+        borderRadius: '4px',
+        fontSize: '12px',
+        opacity: '0',
+        transition: 'opacity 0.2s',
+        whiteSpace: 'nowrap',
+        pointerEvents: 'none',
+    },
+
+    '&:hover:after': {
+        opacity: 1,
+    },
 });

@@ -9,13 +9,15 @@ import Linkify from "linkify-react";
 import 'linkify-plugin-hashtag';
 import 'linkify-plugin-mention';
 import { Opts as LinkifyOptions } from 'linkifyjs';
-import { Virtuoso } from "react-virtuoso";
+import { Virtuoso, VirtuosoGrid, VirtuosoGridHandle } from "react-virtuoso";
+import { Popover } from 'react-tiny-popover';
 import { ViewBeforeLogin } from "./ViewBeforeLogin";
 import { useLoggedInError } from './useLoggedInError';
 import { useTimelineError } from "./useTimelineError";
 import { useNotedError } from "./useNotedError";
 import { useNotedListener } from './useNotedListener';
 import { EmittingEvents, ListeningEvents } from '../src/ViewProvider';
+import { useEmojis } from './useEmojis';
 
 declare global {
     function acquireVsCodeApi(): {
@@ -47,6 +49,8 @@ function App() {
     const [timelineSnapshot, setTimelineSnapshot] = useState(timeline);
     const timelineError = useTimelineError();
     const [isScrollAtTop, setIsScrollAtTop] = useState(true);
+    const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+    const emojis = useEmojis();
 
     useEffect(() => {
         vscode.postMessage({
@@ -80,6 +84,10 @@ function App() {
                 visiability: visibilityOption,
             },
         });
+    };
+
+    const onEmojiSelectWindow = () => {
+        setIsPopoverOpen(!isPopoverOpen);
     };
 
     useNotedListener(useCallback(() => {
@@ -164,6 +172,13 @@ function App() {
                     }
                     <div>
                         <VSCodeButton onClick={onNote}>Note</VSCodeButton>
+                        <EmojiSelectWindow
+                            emojis={emojis}
+                            setNoteContent={setNoteContent}
+                            noteContent={noteContent}
+                            isPopoverOpen={isPopoverOpen}
+                            setIsPopoverOpen={setIsPopoverOpen}
+                            onEmojiSelectWindow={onEmojiSelectWindow} />
                     </div>
                 </form>
             </div>
@@ -305,5 +320,49 @@ function NoteContent({ note, parentsNoteId, cwOpened, onCwToggle, sensitiveFileO
         </>
     );
 };
+
+function EmojiSelectWindow({ emojis, setNoteContent, noteContent, isPopoverOpen, setIsPopoverOpen, onEmojiSelectWindow }) {
+    const ref = React.createRef<VirtuosoGridHandle>();
+
+    const onEmojiClick = (noteContent, emoji) => {
+        setNoteContent(noteContent + `:${emoji.name}:`);
+    };
+
+    return (
+        <Popover
+            isOpen={isPopoverOpen}
+            positions={['bottom', 'left', 'right', 'top']} // preferred positions by priority
+            content={
+                <VirtuosoGrid
+                    ref={ref}
+                    components={{
+                        Item: styles.ItemContainer,
+                        List: styles.ListContainer,
+                        ScrollSeekPlaceholder: () => (
+                            <styles.ItemContainer>
+                                <VSCodeProgressRing />
+                            </styles.ItemContainer>
+                        ),
+                    }}
+                    data={emojis}
+                    scrollSeekConfiguration={{
+                        enter: (velocity) => Math.abs(velocity) > 200,
+                        exit: (velocity) => Math.abs(velocity) < 30,
+                    }}
+                    itemContent={(index, emoji) =>
+                        <styles.ItemWrapper>
+                            <div className={styles.hoverableEmoji} onClick={() => onEmojiClick(noteContent, emoji)}>
+                                <img src={emoji.url} alt={emoji.name} />
+                            </div>
+                        </styles.ItemWrapper>}
+                    style={{ height: 200, width: 300 }}
+                />
+            }
+            onClickOutside={() => setIsPopoverOpen(false)}
+        >
+            <VSCodeButton onClick={onEmojiSelectWindow}>Emoji</VSCodeButton>
+        </Popover>
+    );
+}
 
 createRoot(document.querySelector('#app') as HTMLDivElement).render(<App />);
