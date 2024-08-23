@@ -89,6 +89,8 @@
     "react-dom": "^18.2.0",
     "react-tiny-popover": "^8.0.4",
     "react-virtuoso": "^4.6.2",
+    "slate": "^0.103.0",
+    "slate-react": "^0.108.0",
     "ws": "^8.16.0"
   }
 }
