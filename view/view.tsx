@@ -18,6 +18,8 @@ import { useNotedError } from "./useNotedError";
 import { useNotedListener } from './useNotedListener';
 import { EmittingEvents, ListeningEvents } from '../src/ViewProvider';
 import { useEmojis } from './useEmojis';
+import EmojiSlate from './EmojiSlate';
+import { Descendant } from 'slate';
 
 declare global {
     function acquireVsCodeApi(): {
@@ -228,6 +230,7 @@ function App() {
                                     sensitiveFileOpened={noteSensitiveFileOpened}
                                     onSensitiveFileToggle={(parentsNoteId) => setNoteSensitiveFileOpened({ ...noteSensitiveFileOpened, [parentsNoteId]: !noteSensitiveFileOpened[parentsNoteId] })}
                                     linkifyOptions={linkifyOptions}
+                                    loggedInAccount={loggedInAccount}
                                 />
                             </div>
                         </div>
@@ -238,7 +241,43 @@ function App() {
     );
 }
 
-function NoteContent({ note, parentsNoteId, cwOpened, onCwToggle, sensitiveFileOpened, onSensitiveFileToggle, linkifyOptions }: {
+type CustomText = { text: string; emoji?: string };
+
+const noteTextToEmojiSlate = (text: string, emojis: EmittingEvents['note']['message']['emojis'], loggedInAccount: any): Descendant[] => {
+    const result: Descendant[] = [
+        { type: 'paragraph', children: [] }
+    ];
+
+    if (text !== null) {
+        const emojiRegex = /:([a-zA-Z0-9_+-]+):/g;
+        const parts = text.split(emojiRegex);
+        const emojiMatches = text.match(emojiRegex) || [];
+        let children: CustomText[] = [];
+
+        parts.forEach((part, index) => {
+            if (part && !emojiMatches.some(emoji => emoji.includes(part))) {
+                children.push({ text: part });
+            } else {
+                const emojiName = part;
+                try {
+                    children.push({ text: '', emoji: emojis[emojiName] });
+                } catch (error) {
+                    children.push({ text: `:${emojiName}:`, emoji: '' });
+                    // TODO: noiced there are multiple network requests when scrolling, bad for performance
+                    // axios.get(`https://${loggedInAccount.host}/api/emoji?name=${emojiName}`)
+                    //     .then((response) => {
+                    //         children.push({ text: '', emoji: response.data.url });
+                    //     });
+                }
+            }
+        });
+        result[0]['children'] = children;
+    }
+
+    return result;
+};
+
+function NoteContent({ note, parentsNoteId, cwOpened, onCwToggle, sensitiveFileOpened, onSensitiveFileToggle, linkifyOptions, loggedInAccount }: {
     note: EmittingEvents['note']['message'];
     parentsNoteId: string;
     cwOpened: { [parentsNoteId: string]: boolean };
@@ -246,13 +285,14 @@ function NoteContent({ note, parentsNoteId, cwOpened, onCwToggle, sensitiveFileO
     sensitiveFileOpened: { [parentsNoteId: string]: boolean };
     onSensitiveFileToggle: (parentNoteId: string) => void;
     linkifyOptions: LinkifyOptions;
+    loggedInAccount: any;
 }) {
     return (
         <>
             {note.cw && <>
-                <p className={[styles.reset, styles.noteText].join(' ')}>
-                    <Linkify options={linkifyOptions}>{note.cw}</Linkify>
-                </p>
+                <span className={[styles.reset, styles.noteText].join(' ')}>
+                    <EmojiSlate isReadOnly={true} initialValue={noteTextToEmojiSlate(note.cw, note.emojis, loggedInAccount)} loggedInAccount={loggedInAccount} />
+                </span>
                 <VSCodeButton
                     appearance="secondary"
                     onClick={() => onCwToggle(parentsNoteId)}
@@ -262,9 +302,9 @@ function NoteContent({ note, parentsNoteId, cwOpened, onCwToggle, sensitiveFileO
             </>}
             {(!note.cw || cwOpened[parentsNoteId]) && <>
                 {note.text !== null &&
-                    <p className={[styles.reset, styles.noteText].join(' ')}>
-                        <Linkify options={linkifyOptions}>{note.text}</Linkify>
-                    </p>
+                    <span className={[styles.reset, styles.noteText].join(' ')}>
+                        <EmojiSlate isReadOnly={true} initialValue={noteTextToEmojiSlate(note.text, note.emojis, loggedInAccount)} loggedInAccount={loggedInAccount} />
+                    </span>
                 }
                 {note.files.some((file) => file.isSensitive) &&
                     <VSCodeButton
@@ -314,6 +354,7 @@ function NoteContent({ note, parentsNoteId, cwOpened, onCwToggle, sensitiveFileO
                         sensitiveFileOpened={sensitiveFileOpened}
                         onSensitiveFileToggle={onSensitiveFileToggle}
                         linkifyOptions={linkifyOptions}
+                        loggedInAccount={loggedInAccount}
                     />
                 </>}
             </>}
