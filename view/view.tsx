@@ -266,7 +266,6 @@ const noteTextToEmojiSlate = (text: string, emojis: EmittingEvents['note']['mess
                     // TODO: noiced there are multiple network requests when scrolling, bad for performance
                     // axios.get(`https://${loggedInAccount.host}/api/emoji?name=${emojiName}`)
                     //     .then((response) => {
-                    //         console.log(response.data);
                     //         children.push({ text: '', emoji: response.data.url });
                     //     });
                 }
