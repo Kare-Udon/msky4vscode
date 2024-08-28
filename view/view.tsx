@@ -260,7 +260,7 @@ const noteTextToEmojiSlate = (text: string, emojis: EmittingEvents['note']['mess
             } else {
                 const emojiName = part;
                 try {
-                    children.push({ text: '', emoji: emojis[emojiName] });
+                    children.push({ text: `:${emojiName}:`, emoji: emojis[emojiName] });
                 } catch (error) {
                     children.push({ text: `:${emojiName}:`, emoji: '' });
                     // TODO: noiced there are multiple network requests when scrolling, bad for performance

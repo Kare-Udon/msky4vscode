@@ -68,10 +68,9 @@ const EmojiSlate: React.FC<EmojiSlateProps> = ({ isReadOnly, initialValue, logge
         <span {...attributes} contentEditable={false} style={{ display: 'inline-block', verticalAlign: 'middle' }}>
           <img
             src={leaf.emoji}
-            alt="emoji"
+            alt={leaf.text}
             style={{ height: '1.5em', width: '1.5em', marginLeft: '0.2em', marginRight: '0.2em' }}
           />
-          {children}
         </span>
       );
     }
